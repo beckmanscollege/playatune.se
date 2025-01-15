@@ -1,0 +1,9 @@
+
+
+canvas {
+  position: absolute;   /* Absolute positioning */
+  left: 50%;            /* Center horizontally */
+  top: 50px;            /* Adjust top position (can be modified) */
+  transform: translateX(-50%);  /* Offset by half of its width to center horizontally */
+}
+
