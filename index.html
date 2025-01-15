@@ -1,5 +1,7 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     /* Base styles for the page */
@@ -7,7 +9,7 @@
       margin: 0;
       padding: 0;
       height: 100vh;
-      overflow: hidden;        /* Prevent scrolling */
+      overflow: hidden; /* Prevent scrolling */
       transition: background 1s ease;  /* Smooth transition when changing background */
     }
 
@@ -46,46 +48,65 @@
 
     /* Canvas style for positioning */
     canvas {
-      position: absolute;   /* Absolute positioning */
-      left: 50%;            /* Center horizontally */
-      top: 50px;            /* Adjust top position (can be modified) */
-      transform: translateX(-50%);  /* Offset by half of its width to center horizontally */
-      background: transparent;  /* Make canvas background transparent */
+      position: absolute;
+      left: 50%;
+      top: 50px;
+      transform: translateX(-50%);
+      background: transparent;
+    }
+
+    /* Button styling */
+    #myButton {
+      background-color: transparent;
+      border: none;
+      color: white; /* White text */
+      padding: 3px 8px; /* Padding */
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+      margin: 4px 2px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #myButton:hover {
+      background-color: blue;
     }
   </style>
 </head>
-
 <body>
   <div><canvas id="canvas"></canvas></div>
+  <button id="myButton">Are you ready to move on?</button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-
   <script type="text/javascript">
     // 7 Predefined Gradients
     const gradients = [
-      'radial-gradient(black, white)', // Black to white
-      'radial-gradient(#000000, #1f00ff)', // Black to blue
-      'radial-gradient(#9c051c, #ff008f)', // Red to pink : D
-      'radial-gradient(#2d3a40, #838f8d)', // Pink to purple
-      'radial-gradient(#1c2426, #a8b5ac)', // Grey to light grey
-      'radial-gradient(#0a3040, #096b69)'  // Black to teal
+      'radial-gradient(black, white)', 
+      'radial-gradient(#000000, #1f00ff)', 
+      'radial-gradient(#9c051c, #ff008f)', 
+      'radial-gradient(#2d3a40, #838f8d)', 
+      'radial-gradient(#1c2426, #a8b5ac)', 
+      'radial-gradient(#0a3040, #096b69)' 
     ];
 
     // Randomly choose a gradient from the array
     const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-
-    // Apply the selected gradient to the body's background
-    document.body.style.background = randomGradient;
+    document.body.style.background = randomGradient; // Apply to the body
 
     // Sound assets
-    const sound1 = new Audio('https://playatune.se/AssetsAssets/Violin1.mp3');
-    const sound2 = new Audio('https://playatune.se/AssetsAssets/Violin2.mp3');
-    const sound3 = new Audio('https://playatune.se/AssetsAssets/Violin3.mp3');
-    const sound4 = new Audio('https://playatune.se/AssetsAssets/Violin4.mp3');
-    const sound5 = new Audio('https://playatune.se/AssetsAssets/Violin5.mp3');
-    
+    const sound1 = new Audio('Assets/Violin1.mp3');
+    const sound2 = new Audio('Assets/Violin2.mp3');
+    const sound3 = new Audio('Assets/Violin3.mp3');
+    const sound4 = new Audio('Assets/Violin4.mp3');
+    const sound5 = new Audio('Assets/Violin5.mp3');
     const soundMap = [sound1, sound2, sound3, sound4, sound5];
-    
+
     let currentSound = null; // The currently playing sound
     let fadeDuration = 500;  // Fade out duration in ms
 
@@ -129,9 +150,8 @@
         p.clear();  // Use p5.js' clear() method to clear the canvas each frame (transparent background)
         p.strokeWeight(lineWeight);
         p.push();
-        // Center the Lissajous figure in the middle of the canvas
         p.translate(p.width / 2, p.height / 2);
-
+        
         for (let i1 = 0; i1 < pointCount; i1++) {
           for (let i2 = 0; i2 < i1; i2++) {
             let d = lissajousPoints[i1].dist(lissajousPoints[i2]);
@@ -151,35 +171,33 @@
       }
 
       p.draw = function() {
-        phi += 0.1
+        phi += 0.1;
         calculateLissajousPoints();
         drawLissajous();
-      }
+      };
 
       p.mouseMoved = function() {
-        // Control Lissajous parameters based on mouse position
-        freqX = p.map(p.mouseX, 0, p.width, 1, 10);  // X position controls freqX
-        freqY = p.map(p.mouseY, 0, p.height, 1, 10);  // Y position controls freqY
-        phi = p.map(p.mouseX, 0, p.width, -180, 180);  // X position controls phase shift
+        handleInput(p.mouseX, p.mouseY);
+      };
+
+      p.touchMoved = function() {
+        handleInput(p.touches[0].x, p.touches[0].y);
+      };
+
+      function handleInput(x, y) {
+        freqX = p.map(x, 0, p.width, 1, 10);
+        freqY = p.map(y, 0, p.height, 1, 10);
+        phi = p.map(x, 0, p.width, -180, 180);
 
         // Fade out the current sound and fade in the new sound
         if (currentSound) {
           fadeOut(currentSound);
         }
 
-        // Select a new sound based on the X position of the mouse
-        let soundIndex = p.int(p.map(p.mouseX, 0, p.width, 0, soundMap.length));
-
-        // Set the new sound
+        let soundIndex = p.int(p.map(x, 0, p.width, 0, soundMap.length));
         currentSound = soundMap[soundIndex];
-
-        // Fade in the new sound
         fadeIn(currentSound);
-
-        // Update Lissajous
-        calculateLissajousPoints();
-        drawLissajous();
-      };
+      }
 
       function fadeOut(sound) {
         let fadeInterval = setInterval(() => {
@@ -219,4 +237,3 @@
   </script>
 </body>
 </html>
-
