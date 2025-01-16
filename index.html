@@ -1,239 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    /* Base styles for the page */
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      overflow: hidden; /* Prevent scrolling */
-      transition: background 1s ease;  /* Smooth transition when changing background */
-    }
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="Assets/favicon.png" type="image/x-icon">
+    <!-- Multiple sizes for better compatibility -->
+    <link rel="icon" type="image/png" sizes="16x16" href="https://playatune.se/Assets/favicon16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://playatune.se/Assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="https://playatune.se/Assets/favicon48.png">
+    <link rel="apple-touch-icon" href="https://playatune.se/Assets/favicon apple.png">
+    <style>
 
-    /* For mobile screens */
-    @media (max-width: 600px) {
+@font-face {
+  font-family: 'MyCustomFont';
+  src: url('https://playatune.se/Assets/Dirtyline 36daysoftype 2022.otf') format('opentype'); /* Corrected format */
+  font-weight: normal;
+  font-style: normal;
+}
+
+      /* Base styles for the page */
       body {
-        font-size: 14px;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden; /* Prevent scrolling */
+        transition: background 1s ease;  /* Smooth transition when changing background */
+        position: relative; /* Ensure the grid can be absolutely positioned */
       }
-      canvas {
+
+      /* Full screen grid background */
+      #grid-background {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: auto;
+        height: 100%;
+        background-image: 
+          linear-gradient(to right, rgba(255, 255, 255, 0.2) 1px, transparent 1px), 
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+        background-size: 50px 50px; /* Adjust grid size */
+        pointer-events: none; /* Make sure grid doesn't interfere with mouse events */
+        z-index: 1; /* Behind the canvas */
       }
-    }
 
-    /* For tablets */
-    @media (min-width: 601px) and (max-width: 1024px) {
-      body {
-        font-size: 16px;
-      }
-      canvas {
-        width: 80%;
-        height: auto;
-      }
-    }
-
-    /* For desktop screens */
-    @media (min-width: 1025px) {
-      body {
-        font-size: 18px;
-      }
-      canvas {
-        width: 800px;
-        height: 800px;
-      }
-    }
-
-    /* Canvas style for positioning */
-    canvas {
-      position: absolute;
-      left: 50%;
-      top: 50px;
-      transform: translateX(-50%);
-      background: transparent;
-    }
-
-    /* Button styling */
-    #myButton {
-      background-color: transparent;
-      border: none;
-      color: white; /* White text */
-      padding: 3px 8px; /* Padding */
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 14px;
-      margin: 4px 2px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    #myButton:hover {
-      background-color: blue;
-    }
-  </style>
-</head>
-<body>
-  <div><canvas id="canvas"></canvas></div>
-  <button id="myButton">Are you ready to move on?</button>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-  <script type="text/javascript">
-    // 7 Predefined Gradients
-    const gradients = [
-      'radial-gradient(black, white)', 
-      'radial-gradient(#000000, #1f00ff)', 
-      'radial-gradient(#9c051c, #ff008f)', 
-      'radial-gradient(#2d3a40, #838f8d)', 
-      'radial-gradient(#1c2426, #a8b5ac)', 
-      'radial-gradient(#0a3040, #096b69)' 
-    ];
-
-    // Randomly choose a gradient from the array
-    const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-    document.body.style.background = randomGradient; // Apply to the body
-
-    // Sound assets
-    const sound1 = new Audio('Assets/Violin1.mp3');
-    const sound2 = new Audio('Assets/Violin2.mp3');
-    const sound3 = new Audio('Assets/Violin3.mp3');
-    const sound4 = new Audio('Assets/Violin4.mp3');
-    const sound5 = new Audio('Assets/Violin5.mp3');
-    const soundMap = [sound1, sound2, sound3, sound4, sound5];
-
-    let currentSound = null; // The currently playing sound
-    let fadeDuration = 500;  // Fade out duration in ms
-
-    // Lissajous parameters
-    let freqX = 4;
-    let freqY = 7;
-    let phi = 15;
-    let modFreqX = 3;
-    let modFreqY = 2;
-    let lineWeight = 0.2;
-    let lineColor; 
-    let lineAlpha = 50;
-    let connectionRadius = 100;
-    let pointCount = 700;
-    let lissajousPoints = [];
-
-    var sketch = function(p) {
-      p.setup = function() {
-        // Adjust canvas size dynamically based on window size
-        p.createCanvas(window.innerWidth * 0.8, window.innerHeight * 0.8);
-        p.colorMode(p.RGB, 255, 255, 255, 100);
-        p.noFill();
-        lineColor = p.color(255, 50);
-        calculateLissajousPoints();
-        drawLissajous();
-      };
-
-      function calculateLissajousPoints() {
-        lissajousPoints = [];
-        for (let i = 0; i <= pointCount; i++) {
-          let angle = p.map(i, 0, pointCount, 0, p.TAU);
-          let x = p.sin(angle * freqX + p.radians(phi)) * p.cos(angle * modFreqX);
-          let y = p.sin(angle * freqY) * p.cos(angle * modFreqY);
-          x *= p.width / 2 - 30;
-          y *= p.height / 2 - 30;
-          lissajousPoints[i] = p.createVector(x, y);
+      /* For mobile screens */
+      @media (max-width: 600px) {
+        body {
+          font-size: 14px;
+        }
+        canvas {
+          width: 100%;
+          height: auto;
         }
       }
 
-      function drawLissajous() {
-        p.clear();  // Use p5.js' clear() method to clear the canvas each frame (transparent background)
-        p.strokeWeight(lineWeight);
-        p.push();
-        p.translate(p.width / 2, p.height / 2);
-        
-        for (let i1 = 0; i1 < pointCount; i1++) {
-          for (let i2 = 0; i2 < i1; i2++) {
-            let d = lissajousPoints[i1].dist(lissajousPoints[i2]);
-            let a = p.pow(1 / (d / connectionRadius + 1), 6);
-            if (d <= connectionRadius) {
-              p.stroke(lineColor, a * lineAlpha);
-              p.line(
-                lissajousPoints[i1].x,
-                lissajousPoints[i1].y,
-                lissajousPoints[i2].x,
-                lissajousPoints[i2].y
-              );
+      /* For tablets */
+      @media (min-width: 601px) and (max-width: 1024px) {
+        body {
+          font-size: 16px;
+        }
+        canvas {
+          width: 80%;
+          height: auto;
+        }
+      }
+
+      /* For desktop screens */
+      @media (min-width: 1025px) {
+        body {
+          font-size: 18px;
+        }
+        canvas {
+          width: 800px;
+          height: 800px;
+        }
+      }
+
+      /* Canvas style for positioning */
+      canvas {
+        position: absolute;
+        left: 50%;
+        top: 50px;
+        transform: translateX(-50%);
+        background: transparent;
+        z-index: 2; /* Ensure canvas is above the grid */
+      }
+
+      /* Button styling */
+      #myButton {
+        background-color: transparent;
+        border: none;
+        color: white; /* White text */
+        padding: 3px 8px; /* Padding */
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 4px 2px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'MyCustomFont', Arial, sans-serif;  /* Apply the custom font */
+      }
+
+      #myButton:hover {
+        background-color: blue;
+      }
+
+      /* Background Audio Element (hidden) */
+      audio#background-audio {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="grid-background"></div> <!-- Full-screen grid -->
+    <div><canvas id="canvas"></canvas></div>
+
+    <a href="https://www.searching4myown.space">
+      <button id="myButton">Are You Ready To Move On?</button>
+    </a>
+
+    <!-- Background audio element -->
+    <audio id="background-audio" autoplay loop>
+      <source src="https://playatune.se/Assets/bakgrundsljud.mp3" type="audio/mp3">
+      Your browser does not support the audio element.
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script type="text/javascript">
+      // 7 Predefined Gradients
+      const gradients = [
+        'radial-gradient(black, white)', 
+        'radial-gradient(#000000, #1f00ff)',  
+      ];
+
+      // Randomly choose a gradient from the array
+      const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+      document.body.style.background = randomGradient; // Apply to the body
+
+      // Sound assets for mouse interaction
+      const sound1 = new Audio('https://playatune.se/Assets/Violin1.mp3');
+      const sound2 = new Audio('https://playatune.se/Assets/Violin3.mp3');
+      const sound3 = new Audio('https://playatune.se/Assets/Violin7.mp3');
+      const sound4 = new Audio('https://playatune.se/Assets/Violin4.mp3');
+      const sound5 = new Audio('https://playatune.se/Assets/Violin8.mp3');
+      const soundMap = [sound1, sound2, sound3, sound4, sound5];
+
+      let currentSound = null; // The currently playing sound
+      let fadeDuration = 600;  // Fade out duration in ms
+
+      // Lissajous parameters
+      let freqX = 4;
+      let freqY = 7;
+      let phi = 15;
+      let modFreqX = 3;
+      let modFreqY = 2;
+      let lineWeight = 0.2;
+      let lineColor; 
+      let lineAlpha = 50;
+      let connectionRadius = 100;
+      let pointCount = 700;
+      let lissajousPoints = [];
+
+      var sketch = function(p) {
+        p.setup = function() {
+          // Adjust canvas size dynamically based on window size
+          p.createCanvas(window.innerWidth * 0.8, window.innerHeight * 0.8);
+          p.colorMode(p.RGB, 255, 255, 255, 100);
+          p.noFill();
+          
+          // Set Lissajous figure line color based on background gradient
+          if (randomGradient === 'radial-gradient(black, white)') {
+            lineColor = p.color(0, 0, 0);  // Black for the black/white gradient
+          } else if (randomGradient === 'radial-gradient(#000000, #1f00ff)') {
+            lineColor = p.color(255, 255, 255);  // White for the blue gradient
+          }
+
+          calculateLissajousPoints();
+          drawLissajous();
+        };
+
+        function calculateLissajousPoints() {
+          lissajousPoints = [];
+          for (let i = 0; i <= pointCount; i++) {
+            let angle = p.map(i, 0, pointCount, 0, p.TAU);
+            let x = p.sin(angle * freqX + p.radians(phi)) * p.cos(angle * modFreqX);
+            let y = p.sin(angle * freqY) * p.cos(angle * modFreqY);
+            x *= p.width / 2 - 30;
+            y *= p.height / 2 - 30;
+            lissajousPoints[i] = p.createVector(x, y);
+          }
+        }
+
+        function drawLissajous() {
+          p.clear();  // Use p5.js' clear() method to clear the canvas each frame (transparent background)
+          p.strokeWeight(lineWeight);
+          p.push();
+          p.translate(p.width / 2, p.height / 2);
+
+          for (let i1 = 0; i1 < pointCount; i1++) {
+            for (let i2 = 0; i2 < i1; i2++) {
+              let d = lissajousPoints[i1].dist(lissajousPoints[i2]);
+              let a = p.pow(1 / (d / connectionRadius + 1), 6);
+              if (d <= connectionRadius) {
+                p.stroke(lineColor, a * lineAlpha);
+                p.line(
+                  lissajousPoints[i1].x,
+                  lissajousPoints[i1].y,
+                  lissajousPoints[i2].x,
+                  lissajousPoints[i2].y
+                );
+              }
             }
           }
-        }
-        p.pop();
-      }
-
-      p.draw = function() {
-        phi += 0.1;
-        calculateLissajousPoints();
-        drawLissajous();
-      };
-
-      p.mouseMoved = function() {
-        handleInput(p.mouseX, p.mouseY);
-      };
-
-      p.touchMoved = function() {
-        handleInput(p.touches[0].x, p.touches[0].y);
-      };
-
-      function handleInput(x, y) {
-        freqX = p.map(x, 0, p.width, 1, 10);
-        freqY = p.map(y, 0, p.height, 1, 10);
-        phi = p.map(x, 0, p.width, -180, 180);
-
-        // Fade out the current sound and fade in the new sound
-        if (currentSound) {
-          fadeOut(currentSound);
+          p.pop();
         }
 
-        let soundIndex = p.int(p.map(x, 0, p.width, 0, soundMap.length));
-        currentSound = soundMap[soundIndex];
-        fadeIn(currentSound);
-      }
+        p.draw = function() {
+          phi += 0.1;
+          calculateLissajousPoints();
+          drawLissajous();  // Keep redrawing the Lissajous figure without accumulating lines
+        };
 
-      function fadeOut(sound) {
-        let fadeInterval = setInterval(() => {
-          if (sound.volume > 0) {
-            sound.volume -= 0.05;  // Decrease volume slowly
-          } else {
-            clearInterval(fadeInterval);
-            sound.pause();  // Pause the sound once it's faded out completely
-            sound.currentTime = 0;  // Reset the sound
+        p.mouseMoved = function() {
+          handleInput(p.mouseX, p.mouseY);
+        };
+
+        p.touchMoved = function() {
+          handleInput(p.touches[0].x, p.touches[0].y);
+        };
+
+        function handleInput(x, y) {
+          freqX = p.map(x, 0, p.width, 1, 10);
+          freqY = p.map(y, 0, p.height, 1, 10);
+          phi = p.map(x, 0, p.width, -180, 180);
+
+          let soundIndex = p.int(p.map(x, 0, p.width, 0, soundMap.length - 1));
+
+          // Only fade out if the sound is different from the previous one
+          if (currentSound && currentSound !== soundMap[soundIndex]) {
+            fadeOut(currentSound);
           }
-        }, fadeDuration / 10);
-      }
 
-      function fadeIn(sound) {
-        sound.volume = 0;  // Start the new sound at 0 volume
-        sound.play();
-        
-        let fadeInterval = setInterval(() => {
-          if (sound.volume < 1) {
-            sound.volume += 0.05;  // Increase volume slowly
-          } else {
-            clearInterval(fadeInterval);  // Stop the fade-in once full volume is reached
-          }
-        }, fadeDuration / 10);
-      }
+          // Set the new sound and fade it in
+          currentSound = soundMap[soundIndex];
+          fadeIn(currentSound);
+        }
 
-      // Re-adjust canvas size on window resize
-      p.windowResized = function() {
-        p.resizeCanvas(window.innerWidth * 0.8, window.innerHeight * 0.8);
-        calculateLissajousPoints();
-        drawLissajous();
+        function fadeOut(sound) {
+          let fadeInterval = setInterval(() => {
+            if (sound.volume > 0) {
+              sound.volume -= 0.07;  // Decrease volume slowly
+            } else {
+              clearInterval(fadeInterval);
+              sound.pause();  // Pause the sound once it's faded out completely
+              sound.currentTime = 0;  // Reset the sound
+            }
+          }, fadeDuration / 3);
+        }
+
+        function fadeIn(sound) {
+          sound.volume = 0;  // Start the new sound at 0 volume
+          sound.play();
+          
+          let fadeInterval = setInterval(() => {
+            if (sound.volume < 1) {
+              sound.volume += 0.05;  // Increase volume slowly
+            } else {
+              clearInterval(fadeInterval);  // Stop the fade-in once full volume is reached
+            }
+          }, fadeDuration / 3);
+        }
+
+        // Re-adjust canvas size on window resize
+        p.windowResized = function() {
+          p.resizeCanvas(window.innerWidth * 0.8, window.innerHeight * 0.8);
+          calculateLissajousPoints();
+          drawLissajous();
+        };
       };
-    };
 
-    // Start p5 sketch
-    new p5(sketch);
-  </script>
-</body>
+      // Start p5 sketch
+      new p5(sketch);
+    </script>
+  </body>
 </html>
